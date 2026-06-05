@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Sports Data Platform API
+  version: 1.0.0
+paths:
+  /harjoitus:
+    get:
+      summary: Hakee listan kaikista harjoituksista (esim. hakua ja selausta varten)
+      operationId: getHarjoitukset
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Palautettavien harjoitusten maksimimäärä
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Onnistunut haku, palauttaa listan harjoituksista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HarjoitusPerustieto'
+        '500':
+          description: Sisäinen palvelinvirhe
+
+  /harjoitus/{harjoitusId}:
+    get:
+      summary: Hakee yksittäisen harjoituksen perustiedot ja metadatan
+      operationId: getHarjoitusById
+      parameters:
+        - name: harjoitusId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Onnistunut haku, palauttaa harjoituksen tiedot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HarjoitusPerustieto'
+        '404':
+          description: Harjoitusta ei löytynyt
+        '500':
+          description: Sisäinen palvelinvirhe
+
+  /ingest:
+    post:
+      summary: Vastaanottaa sensoridataa lennosta
+      operationId: ingestSensorData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SensorData'
+      responses:
+        '200':
+          description: Data lähetetty onnistuneesti Event Hubiin
+        '500':
+          description: Sisäinen palvelinvirhe
+
+  /kiihtyvyys/{harjoitusId}/intensiteetti:
+    get:
+      summary: Kiihtyvyyden ja g-voimien ikkunoidut keski- ja huippuarvot aikajärjestyksessä
+      operationId: getHarjoitusIntensiteetti
+      parameters:
+        - name: harjoitusId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: windowSize
+          in: query
+          required: false
+          description: Aikajakson pituus minuutteina (oletus 5 min)
+          schema:
+            type: string
+            enum: [1m, 5m, 15m, 30m]
+            default: 5m
+      responses:
+        '200':
+          description: Onnistunut haku, palauttaa listan ikkunoiduista koosteista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IntensiteettiIkkunaKooste'
+        '404':
+          description: Harjoitusta ei löytynyt
+        '500':
+          description: Sisäinen palvelinvirhe
+
+  /syke/{harjoitusId}/zones:
+    get:
+      summary: Sykealueiden ajallinen jakauma 
+      operationId: getSykeAlueet
+      parameters:
+        - name: harjoitusId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Onnistunut haku pulssialueista
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PulssialueKooste'
+        '404':
+          description: Harjoitusta ei löytynyt
+        '500':
+          description: Sisäinen palvelinvirhe
+
+  /harjoitus/{harjoitusId}/yhteenveto:
+    get:
+      summary: Harjoituksen kokonaisyhteenveto
+      operationId: getHarjoitusYhteenveto
+      parameters:
+        - name: harjoitusId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exercise summary data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HarjoitusYhteenveto'
+        '404':
+          description: Harjoitusta ei löytynyt
+        '500':
+          description: Sisäinen palvelinvirhe
+
+components:
+  schemas:
+    HarjoitusPerustieto:
+      type: object
+      required:
+        - harjoitusId
+        - startTime
+        - sportType
+        - status
+      properties:
+        harjoitusId:
+          type: string
+          example: "workout-uuid-001"
+        sportType:
+          type: string
+          example: "Cycling"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-03-20T12:00:00Z"
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, FAILED]
+          example: "COMPLETED"
+        description:
+          type: string
+          example: "Keskiviikon lenkki keskuspuistossa"
+
+    SensorData:
+      type: object
+      required:
+        - harjoitusId
+      properties:
+        harjoitusId:
+          type: string
+          example: "workout-uuid-001"
+        xCoord:
+          type: number
+          example: 0.12
+        yCoord:
+          type: number
+          example: -0.98
+        zCoord:
+          type: number
+          example: 0.05
+        pulse:
+          type: integer
+          example: 145
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-03-20T12:00:00Z"
+
+    IntensiteettiIkkunaKooste:
+      type: object
+      required:
+        - windowStart
+        - windowEnd
+        - avgGForce
+        - maxGForce
+        - exertionLevel
+      properties:
+        windowStart:
+          type: string
+          format: date-time
+          description: Aikajakson alkamisaika
+          example: "2024-03-20T12:00:00Z"
+        windowEnd:
+          type: string
+          format: date-time
+          description: Aikajakson päättymisaika
+          example: "2024-03-20T12:05:00Z"
+        avgGForce:
+          type: number
+          format: double
+          description: Viiden minuutin ikkunan keskikiihtyvyys (G-voima)
+          example: 1.05
+        maxGForce:
+          type: number
+          format: double
+          description: Ikkunan aikana mitattu suurin yksittäinen g-voimapiikki
+          example: 3.82
+        exertionLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, ULTRA]
+          description: Databricksissä laskettu kuormitusluokitus tälle jaksolle
+          example: "HIGH"
+
+    PulssialueKooste:
+      type: object
+      properties:
+        zoneName:
+          type: string
+          example: "Aerobic"
+        secondsInZone:
+          type: integer
+          example: 1500
+
+    HarjoitusYhteenveto:
+      type: object
+      required:
+        - harjoitusId
+        - totalDurationSeconds
+        - totalDistanceMeters
+        - totalElevationGain
+        - climbingDurationSeconds
+        - maxPulse
+        - avgPulse
+        - averageSlopePercentage
+      description: Harjoituksen jälkeinen loppuyhteenveto
+      properties:
+        harjoitusId:
+          type: string
+          example: "workout-001"
+        totalDurationSeconds:
+          type: integer
+          format: int64
+          example: 270
+        totalDistanceMeters:
+          type: number
+          format: double
+          example: 1000.0
+        totalElevationGain:
+          type: number
+          format: double
+          example: 35.0
+        climbingDurationSeconds:
+          type: integer
+          format: int64
+          example: 99
+        maxPulse:
+          type: integer
+          example: 190
+        avgPulse:
+          type: number
+          format: double
+          example: 155.5
+        averageSlopePercentage:
+          type: number
+          format: double
+          example: 3.5
