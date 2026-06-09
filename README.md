@@ -117,3 +117,93 @@ Esimerkki uuden komponentin (esim. dialogi/modal) lisäämisestä:
 ```bash
 npx shadcn@latest add dialog
 ```
+
+## Ympäristömuuttujat ja Tunnistautuminen
+
+Sovellus osaa mukautua taustajärjestelmän (Spring Boot) vaatimaan tunnistautumistapaan dynaamisesti.
+
+### Paikalliset asetukset (`.env.local`)
+
+Luo projektin juureen `.env.local` -tiedosto (varmista, että se on mukana `.gitignore`-tiedostossa):
+
+```env
+# Valittava menetelmä: 'api-key' tai 'oauth2'
+NEXT_PUBLIC_AUTH_METHOD=api-key
+
+# API-avain (käytössä vain jos menetelmä on 'api-key')
+NEXT_PUBLIC_API_KEY=oma_salainen_avain
+
+# Taustajärjestelmän osoite
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+### OAuth2 / JWT -Testauskehys
+
+Kun käyttöliittymän asetukseksi muutetaan `NEXT_PUBLIC_AUTH_METHOD=oauth2`, yläpalkkiin (`header`) ilmestyy **🔑 Hae JWT** -testipainike.
+
+1. Varmista, että `oauth2-mock-server` pyörii portissa 9000.
+2. Klikkaa painiketta käyttöliittymässä hankkiaksesi voimassa olevan testisession.
+3. Sovellus välittää tämän jälkeen automaattisesti `Authorization: Bearer <token>` -otsikon kaikkiin API-kutsuihin.
+
+
+## Ympäristömuuttujat ja Tunnistautuminen
+
+Sovellus osaa mukautua taustajärjestelmän (Spring Boot) vaatimaan tunnistautumistapaan dynaamisesti.
+
+### Paikalliset asetukset (`.env.local`)
+
+Luo projektin juureen `.env.local` -tiedosto (varmista, että se on mukana `.gitignore`-tiedostossa):
+
+```env
+# Valittava menetelmä: 'api-key' tai 'oauth2'
+NEXT_PUBLIC_AUTH_METHOD=api-key
+
+# API-avain (käytössä vain jos menetelmä on 'api-key')
+NEXT_PUBLIC_API_KEY=oma_salainen_avain
+
+# Taustajärjestelmän osoite
+NEXT_PUBLIC_API_URL=http://localhost:8080/databricks-api/v1
+```
+
+### OAuth2 / JWT -Testauskehys
+
+Kun käyttöliittymän asetukseksi muutetaan `NEXT_PUBLIC_AUTH_METHOD=oauth2`, yläpalkkiin (`header`) ilmestyy **🔑 Hae JWT** -testipainike.
+
+1. Varmista, että `oauth2-mock-server` pyörii portissa 9000.
+2. Klikkaa painiketta käyttöliittymässä hankkiaksesi voimassa olevan testisession.
+3. Sovellus välittää tämän jälkeen automaattisesti `Authorization: Bearer <token>` -otsikon kaikkiin API-kutsuihin.
+
+---
+
+## OpenAPI-rajapintatyypit (TypeScript)
+
+Projektissa käytetään automaattisesti generoituja TypeScript-tyyppejä, jotka pohjautuvat Spring Bootin tuottamaan OpenAPI 3.x -dokumentaatioon. Tyyppien juurena toimii tiedosto `src/types/api.ts`.
+
+### Tyyppien päivittäminen taustajärjestelmästä
+
+Kun Spring Bootin rajapintaan tai tietomalleihin (Schemas) tulee muutoksia, päivitä käyttöliittymän tyypit ajamalla seuraava komento projektin juuressa:
+
+```bash
+npx openapi-types --input http://localhost:8080/v3/api-docs --output src/types/api.ts
+```
+*(Muuta input-osoitetta, jos Spring Bootin Swagger-dokumentaation polku vaihtuu).*
+
+### Tyypitysten käyttö koodissa
+
+Generoidut tyypit poimitaan suoraan `components`-osion alta:
+
+```typescript
+import { components } from "@/types/api";
+
+// Esimerkkejä skeemojen hyödyntämisestä
+type HarjoitusYhteenveto = components["schemas"]["HarjoitusYhteenveto"];
+type HarjoitusPerustieto = components["schemas"]["HarjoitusPerustieto"];
+```
+
+### Sovelluksen kääntäminen (Build / Compile)
+
+Voit testata tyyppien yhteensopivuuden ja kääntää sovelluksen tuotantoversioon komennolla:
+
+```bash
+npm run build
+```

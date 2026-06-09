@@ -27,7 +27,7 @@ export function DataIngestForm() {
 
     if (isSimulating) {
       interval = setInterval(async () => {
-        
+
         if (kulunutAikaSekuntia >= tavoiteAikaSekunteina) {
           setIsSimulating(false);
           alert("Simulaatio valmis! Harjoituksen kesto ja matka simuloitu kokonaan.");
@@ -36,31 +36,31 @@ export function DataIngestForm() {
 
         const aikaAskelSekunteina = lahetysvali / 1000;
         const uusiKulunutAika = Math.min(kulunutAikaSekuntia + aikaAskelSekunteina, tavoiteAikaSekunteina);
-        
+
         const edistymisProsentti = uusiKulunutAika / tavoiteAikaSekunteina;
         const uusiKorkeus = Math.sin(edistymisProsentti * Math.PI * 2) * (maxKorkeusero / 2) + (maxKorkeusero / 2);
-        
+
         // --- NOPEUDEN JA MATKAN SIMULOINTI ---
         const onYlamaki = uusiKorkeus > nykyinenKorkeus;
-        
+
         // Lasketaan looginen nopeus m/s (metrejä sekunnissa)
         // Ylämäessä hitaampi vauhti, alamäessä/tasaisella kovempi vauhti
         const nopeusMetriaSekunnissa = onYlamaki
           ? Math.random() * 3 + 4   // n. 14–25 km/h
           : Math.random() * 4 + 8;  // n. 28–43 km/h
-          
+
         // Matka kasvaa vauhdin ja kuluneen aika-askeleen mukaan
         const kertyraMatkaMetreina = nopeusMetriaSekunnissa * aikaAskelSekunteina;
         const uusiEtaisyys = etaisyysKuljettu + kertyraMatkaMetreina;
         // -------------------------------------
-        
+
         const xCoord = parseFloat((Math.random() * 0.4 - 0.2).toFixed(2));
         const yCoord = parseFloat((-1.0 + (Math.random() * 0.3 - 0.15)).toFixed(2));
         const zCoord = parseFloat((Math.random() * 0.4 - 0.2).toFixed(2));
-        
-        const pulse = onYlamaki 
-          ? Math.floor(Math.random() * 10) + 160  
-          : Math.floor(Math.random() * 15) + 120; 
+
+        const pulse = onYlamaki
+          ? Math.floor(Math.random() * 10) + 160
+          : Math.floor(Math.random() * 15) + 120;
 
         const uusiPiste: SensorData = {
           harjoitusId: harjoitusId,
@@ -74,8 +74,12 @@ export function DataIngestForm() {
         try {
           const res = await fetch(`${SPRING_BOOT_URL}/ingest`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify([uusiPiste]) 
+            headers: {
+              'Content-Type': 'application/json',
+              // Korvaa 'X-API-Key' sillä nimellä, jota API:si vaatii (esim. Authorization tai Apikey)
+              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || 'sinun_api_avaimesi_tähän'
+            },
+            body: JSON.stringify([uusiPiste])
           });
           if (!res.ok) console.error("Ingest virhe:", res.status);
         } catch (err) {
@@ -123,8 +127,8 @@ export function DataIngestForm() {
       <div className="space-y-3 bg-white p-3 rounded-lg border border-zinc-200 shadow-sm">
         <div className="space-y-1">
           <label className="text-[11px] text-zinc-500 font-medium">Harjoitus ID</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={harjoitusId}
             onChange={(e) => setHarjoitusId(e.target.value)}
             disabled={isSimulating}
@@ -134,8 +138,8 @@ export function DataIngestForm() {
 
         <div className="space-y-1">
           <label className="text-[11px] text-zinc-500 font-medium">Harjoituksen kesto (minuuttia)</label>
-          <input 
-            type="number" 
+          <input
+            type="number"
             value={harjoituksenKestoMin}
             onChange={(e) => setHarjoituksenKestoMin(Number(e.target.value))}
             disabled={isSimulating}
@@ -146,8 +150,8 @@ export function DataIngestForm() {
 
         <div className="space-y-1">
           <label className="text-[11px] text-zinc-500 font-medium">Max korkeusero (m)</label>
-          <input 
-            type="number" 
+          <input
+            type="number"
             value={maxKorkeusero}
             onChange={(e) => setMaxKorkeusero(Number(e.target.value))}
             disabled={isSimulating}
@@ -170,13 +174,12 @@ export function DataIngestForm() {
           </select>
         </div>
 
-        <button 
+        <button
           onClick={handleToggleSimulaatio}
-          className={`w-full h-9 text-xs font-bold rounded shadow transition-colors mt-2 ${
-            isSimulating 
-              ? "bg-red-600 hover:bg-red-500 text-white" 
+          className={`w-full h-9 text-xs font-bold rounded shadow transition-colors mt-2 ${isSimulating
+              ? "bg-red-600 hover:bg-red-500 text-white"
               : "bg-teal-600 hover:bg-teal-500 text-white"
-          }`}
+            }`}
         >
           {isSimulating ? "🛑 Pysäytä simulaatio" : "⚡ Käynnistä reittisimulaatio"}
         </button>
@@ -189,16 +192,16 @@ export function DataIngestForm() {
           <p>Aika: <span className="text-white font-bold">{formatTime(kulunutAikaSekuntia)}</span> / {formatTime(tavoiteAikaSekunteina)}</p>
           {/* Kuljettu matka näytetään metreinä (tai kilometreinä jos matka ylittää 1.5km) */}
           <p>Matka: <span className="text-white font-bold">
-            {etaisyysKuljettu > 1500 
-              ? `${(etaisyysKuljettu / 1000).toFixed(2)} km` 
+            {etaisyysKuljettu > 1500
+              ? `${(etaisyysKuljettu / 1000).toFixed(2)} km`
               : `${Math.floor(etaisyysKuljettu)} m`}
           </span></p>
           <p>Korkeus: <span className="text-white font-bold">{nykyinenKorkeus.toFixed(1)} m</span></p>
           <p>Pisteitä lähetetty: <span className="text-teal-400 font-bold">{lahetetytPisteet} kpl</span></p>
-          
+
           <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-2">
-            <div 
-              className="bg-teal-500 h-1.5 transition-all duration-300" 
+            <div
+              className="bg-teal-500 h-1.5 transition-all duration-300"
               style={{ width: `${(kulunutAikaSekuntia / tavoiteAikaSekunteina) * 100}%` }}
             ></div>
           </div>

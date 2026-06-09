@@ -4,6 +4,10 @@ import { WorkoutList } from "@/components/ui/WorkoutList";
 import { DataIngestForm } from "@/components/ui/DataIngestForm";
 import { fetchKaikkiHarjoitukset } from "@/lib/api"; // Tuodaan uusi API-funktio
 import "./globals.css";
+import { Suspense } from "react";
+import OAuth2TestButton from "@/components/ui/OAuth2TestButton";
+
+export const dynamic = 'force-dynamic';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-font-geist-mono", subsets: ["latin"] });
@@ -21,12 +25,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fi">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-zinc-900`}>
         <div className="flex flex-col h-screen w-screen overflow-hidden">
-          
+
           {/* TOP BAR */}
-          <header className="h-10 bg-blue-600 flex items-center px-4 shrink-0 shadow-md z-10">
+          <header className="h-10 bg-blue-600 flex items-center justify-between px-4 shrink-0 shadow-md z-10">
             <h1 className="text-sm font-bold tracking-wide uppercase text-white">
               🏃‍♂️ Sports Data Platform - Dashboard
             </h1>
+
+            {/* 2. Lisätään testipainike yläpalkin oikeaan reunaan */}
+            <OAuth2TestButton />
           </header>
 
           {/* INFO AREA */}
@@ -45,10 +52,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
           {/* RUNKO */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
-            
-            {/* Välitetään API:sta haettu lista komponentille */}
-            <WorkoutList initialHarjoitukset={harjoitukset} />
-
+            {/* Kääritään hakuparametreja käyttävä komponentti Suspenseen */}
+            <Suspense fallback={<div>Ladataan sivupalkkia...</div>}>
+              {/* Välitetään API:sta haettu lista komponentille */}
+              <WorkoutList initialHarjoitukset={harjoitukset} />
+            </Suspense>
             {/* KESKIALUE */}
             <main className="lg:col-span-6 bg-white p-6 space-y-6 overflow-y-auto">
               {children}
